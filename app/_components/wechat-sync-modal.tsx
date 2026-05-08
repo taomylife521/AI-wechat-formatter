@@ -374,10 +374,10 @@ export function WeChatSyncModal({
 
                         <div className="bg-white/50 p-3 border-2 border-(--neo-ink) text-[10px] font-bold space-y-1">
                           <p>
-                            • 路径：设置与开发 {">"} 基本配置 {">"} IP白名单
+                            • 路径：微信开发者平台 {">"} 选择公众号 {">"} 基础信息 {">"} IP白名单
                           </p>
                           <p>
-                            • 提醒：修改后通常需要{" "}
+                            • 提醒：保存后通常需要{" "}
                             <span className="text-(--neo-pink) font-black">1-3 分钟</span> 才会生效
                           </p>
                         </div>
@@ -443,7 +443,7 @@ export function WeChatSyncModal({
                       value={draftConfig.appId}
                       onChange={(e) => setDraftConfig({ ...draftConfig, appId: e.target.value })}
                       className="neo-input w-full px-3 py-2.5 font-bold border-b-2"
-                      placeholder="微信公众号 AppID"
+                      placeholder="微信公众号后台获取"
                       autoComplete="off"
                     />
                   </div>
@@ -459,7 +459,7 @@ export function WeChatSyncModal({
                         setDraftConfig({ ...draftConfig, appSecret: e.target.value })
                       }
                       className="neo-input w-full px-3 py-2.5 font-bold border-b-2"
-                      placeholder="微信公众号 AppSecret"
+                      placeholder="请确保已重置并保存"
                       autoComplete="off"
                     />
                   </div>
@@ -542,21 +542,35 @@ export function WeChatSyncModal({
                       {serverIp ? "重新探测 IP" : "点击探测精准出口 IP"}
                     </button>
 
-                    <div className="bg-white/30 border-2 border-(--neo-ink) p-3 space-y-2">
-                      <p className="text-[10px] font-black flex items-center gap-1">
-                        <HelpCircle className="w-3 h-3" /> 如何配置？
+                    <div className="bg-white/30 border-2 border-(--neo-ink) p-4 space-y-3">
+                      <p className="text-xs font-black flex items-center gap-1">
+                        <HelpCircle className="w-3.5 h-3.5" /> 如何获取凭证与配置 IP？
                       </p>
-                      <p className="text-[10px] font-medium leading-relaxed">
-                        1. 复制上方 IP <br />
-                        2. 登录 <span className="font-bold underline">微信公众平台</span> <br />
-                        3. 进入{" "}
-                        <span className="font-bold underline">
-                          设置与开发 - 基本配置 - IP白名单
-                        </span>{" "}
-                        <br />
-                        4. 粘贴并保存。生效通常需要{" "}
-                        <span className="text-(--neo-pink) font-bold">1-3 分钟</span>。
-                      </p>
+                      <ol className="text-[10px] font-bold list-decimal list-inside space-y-2 text-(--neo-ink)/80">
+                        <li>
+                          登录 <span className="underline">微信开发者平台</span>{" "}
+                          (developers.weixin.qq.com/console)
+                        </li>
+                        <li>选择对应的公众号 &gt; 基础信息</li>
+                        <li>在此页面可直接获取 AppID 和获取/重置 AppSecret</li>
+                        <li>
+                          <span className="text-(--neo-pink) font-black">关键步骤：</span>
+                          将上方捕获的 IP 地址填入微信后台的{" "}
+                          <span className="underline">IP白名单</span> 中。
+                        </li>
+                        <li>
+                          生效通常需要{" "}
+                          <span className="text-(--neo-pink) font-black">1-3 分钟</span>。
+                        </li>
+                      </ol>
+                      <a
+                        href="https://developers.weixin.qq.com/console/index"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-black underline flex items-center gap-1 mt-2 hover:text-(--neo-pink) transition-colors"
+                      >
+                        前往微信开发者平台 <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
                     </div>
                   </div>
                 </div>
