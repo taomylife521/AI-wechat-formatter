@@ -1,6 +1,20 @@
-import { ExternalLink, HelpCircle, ImageIcon, Loader2, Send, ShieldCheck, Star, Upload } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
-import type { WeChatAccountConfig, WeChatSyncRequest, WeChatSyncResponse, WeChatSyncStatus } from "../_types/wechat";
+import {
+  ExternalLink,
+  HelpCircle,
+  ImageIcon,
+  Loader2,
+  Send,
+  ShieldCheck,
+  Star,
+  Upload,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type {
+  WeChatAccountConfig,
+  WeChatSyncRequest,
+  WeChatSyncResponse,
+  WeChatSyncStatus,
+} from "../_types/wechat";
 
 type WeChatSyncModalProps = {
   open: boolean;
@@ -38,17 +52,7 @@ export function WeChatSyncModal({
       setEditTitle(title);
       setErrorDetails("");
       setStatus("idle");
-      
-      // 恢复自动探测（仅引导，不返回误导 IP）
-      fetch("/api/wechat/ip")
-        .then(res => res.json())
-        .then(data => {
-          if (!data.isManualRequired && data.ip && !data.ip.includes("本地")) {
-            setServerIp(data.ip);
-          }
-        })
-        .catch(() => {});
-      
+
       // 自动尝试从 HTML 提取第一张图作为默认封面预览
       const imgMatch = html.match(/<img[^>]+src="([^">]+)"/i);
       if (imgMatch) {
@@ -106,12 +110,16 @@ export function WeChatSyncModal({
 
       let data: WeChatSyncResponse;
       const contentType = response.headers.get("content-type");
-      
+
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
         const text = await response.text();
-        throw new Error(response.ok ? "服务器响应格式错误" : `服务器错误 (${response.status}): ${text.slice(0, 100)}`);
+        throw new Error(
+          response.ok
+            ? "服务器响应格式错误"
+            : `服务器错误 (${response.status}): ${text.slice(0, 100)}`,
+        );
       }
 
       if (data.success) {
@@ -121,8 +129,8 @@ export function WeChatSyncModal({
         setStatus("error");
         setErrorDetails(data.details || data.error || "未知错误");
         // 如果后端返回了精准检测到的 IP，更新它
-        if ((data as any).detectedIp) {
-          setServerIp((data as any).detectedIp);
+        if (data.detectedIp) {
+          setServerIp(data.detectedIp);
         }
       }
     } catch (err: unknown) {
@@ -163,7 +171,7 @@ export function WeChatSyncModal({
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center border-2 border-(--neo-ink) hover:bg-(--neo-pink) transition-colors font-black"
           >
@@ -176,7 +184,9 @@ export function WeChatSyncModal({
           <button
             onClick={() => setActiveTab("sync")}
             className={`flex-1 py-3 font-black text-xs uppercase transition-all flex items-center justify-center gap-2 ${
-              activeTab === "sync" ? "bg-(--neo-green) text-white" : "hover:bg-(--neo-green)/10 text-(--neo-ink)"
+              activeTab === "sync"
+                ? "bg-(--neo-green) text-white"
+                : "hover:bg-(--neo-green)/10 text-(--neo-ink)"
             }`}
           >
             <Upload className="w-3.5 h-3.5" />
@@ -185,7 +195,9 @@ export function WeChatSyncModal({
           <button
             onClick={() => setActiveTab("config")}
             className={`flex-1 py-3 font-black text-xs uppercase transition-all flex items-center justify-center gap-2 ${
-              activeTab === "config" ? "bg-(--neo-yellow) text-(--neo-ink)" : "hover:bg-(--neo-yellow)/10 text-(--neo-ink)"
+              activeTab === "config"
+                ? "bg-(--neo-yellow) text-(--neo-ink)"
+                : "hover:bg-(--neo-yellow)/10 text-(--neo-ink)"
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -206,23 +218,27 @@ export function WeChatSyncModal({
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-2xl font-black text-(--neo-ink)">推送成功！</h4>
-                    <p className="text-sm font-bold text-(--neo-muted)">文章已安全到达公众号草稿箱</p>
+                    <p className="text-sm font-bold text-(--neo-muted)">
+                      文章已安全到达公众号草稿箱
+                    </p>
                   </div>
-                  
+
                   <div className="bg-(--neo-yellow) border-[3px] border-(--neo-ink) p-4 text-left shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
                     <p className="text-xs font-black flex items-center gap-1 mb-2">
                       <HelpCircle className="w-3.5 h-3.5 text-(--neo-ink)" />
                       接下来该做什么？
                     </p>
                     <p className="text-[11px] font-bold text-(--neo-ink) leading-relaxed">
-                      受限于微信 API 规则，同步后的文章处于“草稿”状态。请登录 <span className="bg-black text-white px-1 mx-0.5">微信公众平台</span>，在【草稿箱】中进行最后的预览并手动点击“发布”。
+                      受限于微信 API 规则，同步后的文章处于“草稿”状态。请登录{" "}
+                      <span className="bg-black text-white px-1 mx-0.5">微信公众平台</span>
+                      ，在【草稿箱】中进行最后的预览并手动点击“发布”。
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-3">
-                    <a 
-                      href="https://mp.weixin.qq.com/" 
-                      target="_blank" 
+                    <a
+                      href="https://mp.weixin.qq.com/"
+                      target="_blank"
                       rel="noreferrer"
                       className="neo-button bg-(--neo-green) text-white w-full py-4 inline-flex items-center justify-center gap-2 font-black text-lg"
                     >
@@ -257,13 +273,17 @@ export function WeChatSyncModal({
                       <label className="text-[10px] font-black uppercase text-(--neo-muted)">
                         文章封面预览
                       </label>
-                      <div 
+                      <div
                         className="relative border-[3px] border-dashed border-(--neo-ink) rounded-none overflow-hidden bg-(--neo-surface) aspect-[2.35/1] flex flex-col items-center justify-center group cursor-pointer hover:border-(--neo-pink) transition-all"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         {coverImage ? (
                           <>
-                            <img src={coverImage} alt="封面预览" className="w-full h-full object-cover" />
+                            <img
+                              src={coverImage}
+                              alt="封面预览"
+                              className="w-full h-full object-cover"
+                            />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                               <div className="bg-white border-2 border-black px-4 py-2 font-black text-xs flex items-center gap-2 shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
                                 <Upload className="w-3 h-3" /> 更换这张封面
@@ -274,20 +294,22 @@ export function WeChatSyncModal({
                           <div className="text-center p-4">
                             <ImageIcon className="w-10 h-10 mx-auto mb-2 text-(--neo-muted) opacity-50" />
                             <p className="text-xs font-black text-(--neo-ink)">点击上传封面</p>
-                            <p className="text-[10px] text-(--neo-muted) mt-1 font-bold">建议 900x383 像素</p>
+                            <p className="text-[10px] text-(--neo-muted) mt-1 font-bold">
+                              建议 900x383 像素
+                            </p>
                           </div>
                         )}
                       </div>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        accept="image/*" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
                       />
                     </div>
                   </div>
-                  
+
                   {/* Status Tip */}
                   <div className="bg-(--neo-cyan) border-[3px] border-(--neo-ink) p-4 shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
                     <div className="flex items-start gap-3">
@@ -295,7 +317,8 @@ export function WeChatSyncModal({
                       <div className="space-y-1">
                         <p className="text-xs font-black">同步提示</p>
                         <p className="text-[10px] font-bold leading-relaxed text-(--neo-ink)/80">
-                          同步过程将自动把正文中的外部图片、Base64 图片转存到微信服务器。请确保你的公众号已配置好本站的服务器出口 IP。
+                          同步过程将自动把正文中的外部图片、Base64
+                          图片转存到微信服务器。请确保你的公众号已配置好本站的服务器出口 IP。
                         </p>
                       </div>
                     </div>
@@ -320,24 +343,44 @@ export function WeChatSyncModal({
                       {errorDetails}
                     </p>
                   </div>
-                  
+
                   {errorDetails.includes("40164") || errorDetails.includes("白名单") ? (
-                    <div className="border-[3px] border-(--neo-ink) p-4 bg-(--neo-yellow) shadow-[4px_4px_0_0_rgba(0,0,0,1)] space-y-3">
-                      <p className="text-xs font-black underline">配置错误：IP 不在白名单中</p>
-                      <p className="text-[10px] font-bold">请将此 IP 填入公众号后台 [基本配置-IP白名单]：</p>
-                      <div className="flex items-center gap-2">
-                        <code className="block bg-black text-white p-3 text-center text-base rounded-none font-mono flex-1 border-2 border-white shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
-                          {serverIp || "探测中..." }
-                        </code>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(serverIp);
-                            showToast("IP 已复制", "success");
-                          }}
-                          className="neo-button bg-white text-black p-3 font-black text-xs shrink-0"
-                        >
-                          复制
-                        </button>
+                    <div className="border-[4px] border-(--neo-ink) p-5 bg-(--neo-yellow) shadow-[8px_8px_0_0_rgba(0,0,0,1)] space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                      <div className="flex items-center gap-2 border-b-2 border-(--neo-ink) pb-2">
+                        <Star className="w-5 h-5 fill-(--neo-ink)" />
+                        <p className="text-sm font-black uppercase">🎯 已捕获真实出口 IP</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold leading-relaxed">
+                          检测到您的公众号尚未将本站 IP 加入白名单。请复制下方 IP
+                          并前往微信后台完成配置：
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                          <code className="block bg-black text-white p-4 text-center text-lg rounded-none font-mono flex-1 border-2 border-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                            {serverIp || "捕获中..."}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(serverIp);
+                              showToast("IP 已复制", "success");
+                            }}
+                            className="neo-button bg-white text-black p-4 font-black text-sm shrink-0 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                          >
+                            复制
+                          </button>
+                        </div>
+
+                        <div className="bg-white/50 p-3 border-2 border-(--neo-ink) text-[10px] font-bold space-y-1">
+                          <p>
+                            • 路径：设置与开发 {">"} 基本配置 {">"} IP白名单
+                          </p>
+                          <p>
+                            • 提醒：修改后通常需要{" "}
+                            <span className="text-(--neo-pink) font-black">1-3 分钟</span> 才会生效
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ) : null}
@@ -372,10 +415,15 @@ export function WeChatSyncModal({
                   </div>
 
                   <div className="w-full max-w-[240px] h-3 bg-white border-2 border-(--neo-ink) overflow-hidden shadow-[3px_3px_0_0_rgba(0,0,0,1)]">
-                    <div 
+                    <div
                       className="h-full bg-(--neo-green) transition-all duration-1000 ease-out"
-                      style={{ 
-                        width: status === "authorizing" ? "33%" : status === "uploading_images" ? "66%" : "95%" 
+                      style={{
+                        width:
+                          status === "authorizing"
+                            ? "33%"
+                            : status === "uploading_images"
+                              ? "66%"
+                              : "95%",
                       }}
                     />
                   </div>
@@ -407,7 +455,9 @@ export function WeChatSyncModal({
                     <input
                       type="password"
                       value={draftConfig.appSecret}
-                      onChange={(e) => setDraftConfig({ ...draftConfig, appSecret: e.target.value })}
+                      onChange={(e) =>
+                        setDraftConfig({ ...draftConfig, appSecret: e.target.value })
+                      }
                       className="neo-input w-full px-3 py-2.5 font-bold border-b-2"
                       placeholder="微信公众号 AppSecret"
                       autoComplete="off"
@@ -437,44 +487,78 @@ export function WeChatSyncModal({
               </div>
 
               <div className="bg-(--neo-cyan) border-[3px] border-(--neo-ink) p-5 shadow-[4px_4px_0_0_rgba(0,0,0,1)] space-y-4">
-                <p className="text-xs font-black flex items-center gap-2 border-b-2 border-(--neo-ink) pb-2">
-                  <HelpCircle className="w-4 h-4" />
-                  白名单配置指引
+                <p className="text-xs font-black flex items-center gap-2 border-b-2 border-(--neo-ink) pb-2 uppercase tracking-tight">
+                  <ShieldCheck className="w-4 h-4" />
+                  IP 白名单配置指引
                 </p>
-                
-                <div className="space-y-3">
-                  <div className="bg-black text-white p-4 rounded-none border-2 border-white shadow-[3px_3px_0_0_rgba(0,0,0,1)]">
-                    <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Server Egress IP</p>
-                    <div className="flex items-center justify-between gap-4">
-                      <code className="text-lg font-mono tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
-                        {serverIp || '未检测'}
-                      </code>
-                      {serverIp && serverIp.includes(".") && (
-                        <button 
+
+                <div className="space-y-4">
+                  {!serverIp ? (
+                    <div className="bg-white/50 border-2 border-dashed border-(--neo-ink) p-4 text-center">
+                      <p className="text-[11px] font-bold text-(--neo-ink) leading-relaxed">
+                        尚未获取出口 IP。微信对 IP
+                        校验极严，建议通过下方按钮进行一次“握手测试”来捕获真值。
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-black text-white p-4 rounded-none border-2 border-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black text-(--neo-yellow) uppercase">
+                          精准出口 IP 已捕获
+                        </p>
+                        <button
                           onClick={() => {
                             navigator.clipboard.writeText(serverIp);
                             showToast("IP 已复制", "success");
                           }}
-                          className="bg-white text-black px-2 py-1 text-[10px] font-black shrink-0 hover:bg-(--neo-yellow) transition-colors"
+                          className="bg-white text-black px-2 py-0.5 text-[10px] font-black hover:bg-(--neo-yellow) transition-colors"
                         >
                           COPY
                         </button>
+                      </div>
+                      <code className="text-xl font-mono block text-center py-1 tracking-wider">
+                        {serverIp}
+                      </code>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleSync}
+                      disabled={
+                        status === "authorizing" ||
+                        status === "uploading_images" ||
+                        status === "creating_draft"
+                      }
+                      className="w-full py-3 bg-white border-[3px] border-(--neo-ink) font-black text-xs hover:bg-(--neo-yellow) transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2"
+                    >
+                      {status === "authorizing" ||
+                      status === "uploading_images" ||
+                      status === "creating_draft" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Star className="w-4 h-4" />
                       )}
+                      {serverIp ? "重新探测 IP" : "点击探测精准出口 IP"}
+                    </button>
+
+                    <div className="bg-white/30 border-2 border-(--neo-ink) p-3 space-y-2">
+                      <p className="text-[10px] font-black flex items-center gap-1">
+                        <HelpCircle className="w-3 h-3" /> 如何配置？
+                      </p>
+                      <p className="text-[10px] font-medium leading-relaxed">
+                        1. 复制上方 IP <br />
+                        2. 登录 <span className="font-bold underline">微信公众平台</span> <br />
+                        3. 进入{" "}
+                        <span className="font-bold underline">
+                          设置与开发 - 基本配置 - IP白名单
+                        </span>{" "}
+                        <br />
+                        4. 粘贴并保存。生效通常需要{" "}
+                        <span className="text-(--neo-pink) font-bold">1-3 分钟</span>。
+                      </p>
                     </div>
                   </div>
-
-                  <button 
-                    onClick={handleSync}
-                    disabled={status === "authorizing" || status === "uploading_images" || status === "creating_draft"}
-                    className="w-full py-2 bg-white border-2 border-(--neo-ink) font-black text-[11px] hover:bg-(--neo-surface) transition-colors shadow-[2px_2px_0_0_rgba(0,0,0,1)] flex items-center justify-center gap-2"
-                  >
-                    {status === "authorizing" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Star className="w-3 h-3" />}
-                    探测精准出口 IP (需配置好密钥)
-                  </button>
-
-                  <p className="text-[9px] font-bold text-(--neo-ink)/70 leading-relaxed italic">
-                    提示：如果上面显示的 IP 与微信提示不符，请点击探测按钮。我们会通过一次授权失败来捕获微信看到的真实出口 IP。
-                  </p>
                 </div>
               </div>
 

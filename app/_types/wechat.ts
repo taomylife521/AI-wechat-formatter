@@ -19,4 +19,5 @@ export type WeChatSyncResponse = {
   mediaId?: string;
   error?: string;
   details?: string;
+  detectedIp?: string;
 };
