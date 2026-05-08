@@ -104,7 +104,15 @@ export function WeChatSyncModal({
       clearTimeout(timer1);
       clearTimeout(timer2);
 
-      const data = (await response.json()) as WeChatSyncResponse;
+      let data: WeChatSyncResponse;
+      const contentType = response.headers.get("content-type");
+      
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(response.ok ? "服务器响应格式错误" : `服务器错误 (${response.status}): ${text.slice(0, 100)}`);
+      }
 
       if (data.success) {
         setStatus("success");

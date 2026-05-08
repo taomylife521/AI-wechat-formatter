@@ -22,6 +22,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 辅助函数：安全获取图片 Buffer
+    const getSafeImageBuffer = async (url: string): Promise<Buffer | null> => {
+      try {
+        if (url.startsWith("data:image")) {
+          return Buffer.from(url.split(",")[1], "base64");
+        }
+        if (url.startsWith("http")) {
+          const res = await axios.get(url, { 
+            responseType: "arraybuffer",
+            timeout: 5000 
+          });
+          return Buffer.from(res.data);
+        }
+        // 忽略相对路径图片，因为服务器无法直接获取
+        return null;
+      } catch (e) {
+        console.error(`Failed to fetch image: ${url}`, e);
+        return null;
+      }
+    };
+
     // 1. 获取 Access Token
     let accessToken: string;
     try {
@@ -29,13 +50,12 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       const detectedIp = (err as any)?.detectedIp || "";
-      console.error("微信授权失败详情:", message);
       return NextResponse.json(
         { 
           success: false, 
           error: "微信授权失败", 
           details: message,
-          detectedIp: detectedIp // 将检测到的精准 IP 返回
+          detectedIp: detectedIp 
         },
         { status: 401 }
       );
@@ -48,7 +68,7 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
-        { success: false, error: "图片转存失败", details: message },
+        { success: false, error: "内容处理失败 (JSDOM/Sharp)", details: message },
         { status: 500 }
       );
     }
@@ -56,44 +76,37 @@ export async function POST(req: NextRequest) {
     // 3. 处理封面图
     let thumbMediaId = "";
     try {
-      let coverBuffer: Buffer;
+      let coverBuffer: Buffer | null = null;
       const filename = "cover.jpg";
 
       if (coverImage) {
-        if (coverImage.startsWith("data:image")) {
-          coverBuffer = Buffer.from(coverImage.split(",")[1], "base64");
-        } else {
-          const res = await axios.get(coverImage, { responseType: "arraybuffer" });
-          coverBuffer = Buffer.from(res.data);
-        }
-      } else {
-        // 如果没传封面图，尝试从 HTML 中提取第一张
+        coverBuffer = await getSafeImageBuffer(coverImage);
+      } 
+      
+      if (!coverBuffer) {
+        // 如果没传封面图或获取失败，尝试从 HTML 中提取第一张
         const imgMatch = html.match(/<img[^>]+src="([^">]+)"/i);
         if (imgMatch) {
-          const firstImgSrc = imgMatch[1];
-          if (firstImgSrc.startsWith("data:image")) {
-            coverBuffer = Buffer.from(firstImgSrc.split(",")[1], "base64");
-          } else {
-            const res = await axios.get(firstImgSrc, { responseType: "arraybuffer" });
-            coverBuffer = Buffer.from(res.data);
-          }
-        } else {
-          // 如果全文无图，抛错（微信草稿强制需要封面）
-          throw new Error("未找到封面图，且文章正文中也没有图片。请至少上传一张图片。");
+          coverBuffer = await getSafeImageBuffer(imgMatch[1]);
         }
+      }
+
+      if (!coverBuffer) {
+        throw new Error("未能获取到有效的封面图。请确保至少有一张公网可访问的图片或上传本地图片。");
       }
 
       thumbMediaId = await uploadCoverToWeChat(accessToken, coverBuffer, filename);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
-        { success: false, error: "封面图处理失败", details: message },
+        { success: false, error: "封面图上传失败", details: message },
         { status: 500 }
       );
     }
 
-    // 4. 生成摘要 (如果不提供则抓取正文)
-    const digest = markdown.slice(0, 120).replace(/#|\*|`|>|\[|\]|\(|\)/g, "").trim();
+    // 4. 生成摘要
+    const safeMarkdown = markdown || "";
+    const digest = safeMarkdown.slice(0, 120).replace(/#|\*|`|>|\[|\]|\(|\)/g, "").trim();
 
     // 5. 新建草稿
     const mediaId = await addWeChatDraft(
@@ -112,9 +125,9 @@ export async function POST(req: NextRequest) {
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("WeChat sync error:", err);
+    console.error("WeChat sync global error:", err);
     return NextResponse.json(
-      { success: false, error: "服务器内部错误", details: message },
+      { success: false, error: "服务器异常", details: message },
       { status: 500 }
     );
   }
