@@ -39,11 +39,11 @@ export function WeChatSyncModal({
       setErrorDetails("");
       setStatus("idle");
       
-      // 恢复自动探测（仅针对 Vercel 等线上环境有效）
+      // 恢复自动探测（仅引导，不返回误导 IP）
       fetch("/api/wechat/ip")
         .then(res => res.json())
         .then(data => {
-          if (data.ip && !data.ip.includes("本地")) {
+          if (!data.isManualRequired && data.ip && !data.ip.includes("本地")) {
             setServerIp(data.ip);
           }
         })

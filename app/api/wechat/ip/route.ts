@@ -5,33 +5,20 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
     /**
-     * 仅保留最可靠的探测方式：
-     * 1. 线上环境：从代理头（Vercel/Cloudflare）读取出口 IP。
-     * 2. 本地环境：直接引导用户通过点击同步来捕获（100% 准确）。
+     * 彻底放弃自动检测。
+     * 因为在 Vercel/本地代理环境下，Header 或三方 API 拿到的
+     * 永远是“入站 IP”（访客 IP 或代理节点 IP），
+     * 而微信白名单需要的是“出站 IP”（服务器请求微信时的 IP）。
+     * 两者绝大多数情况下不一致，显示出来会产生极大误导。
+     * 
+     * 唯一真值：直接请求微信，从报错信息中捕获。
      */
-    const forwarded = req.headers.get("x-forwarded-for");
-    const realIp = req.headers.get("x-real-ip");
-
-    let detectedIp = "";
-    if (forwarded) {
-      detectedIp = forwarded.split(",")[0].trim();
-    } else if (realIp) {
-      detectedIp = realIp;
-    } else {
-      // 在一些环境中，可以通过这种方式获取
-      detectedIp = (req as any).ip || "";
-    }
-
-    if (detectedIp.startsWith("::ffff:")) {
-      detectedIp = detectedIp.substring(7);
-    }
-
-    if (!detectedIp || detectedIp === "127.0.0.1" || detectedIp === "localhost") {
-      return NextResponse.json({ ip: "本地环境（请点击下方按钮探测）" });
-    }
-
-    return NextResponse.json({ ip: detectedIp });
+    return NextResponse.json({ 
+      ip: "请点击下方探测按钮捕获真值",
+      isManualRequired: true
+    });
   } catch (_err) {
-    return NextResponse.json({ ip: "点击探测按钮获取真值" });
+    return NextResponse.json({ ip: "请点击探测按钮" });
   }
+}
 }
