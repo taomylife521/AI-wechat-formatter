@@ -191,6 +191,10 @@ export default function Home() {
               insertMarkdown={markdownTools.insertMarkdown}
               insertHeading={markdownTools.insertHeading}
               insertList={markdownTools.insertList}
+              insertTable={markdownTools.insertTable}
+              insertHighlight={markdownTools.insertHighlight}
+              insertSuperscript={markdownTools.insertSuperscript}
+              insertSubscript={markdownTools.insertSubscript}
               insertCodeBlock={markdownTools.insertCodeBlock}
               insertLink={markdownTools.insertLink}
               insertImage={markdownTools.insertImage}

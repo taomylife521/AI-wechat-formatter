@@ -1,4 +1,4 @@
-import { marked, type Tokens } from "marked";
+import { Marked, Renderer, type Tokens } from "marked";
 import type { FormatTweaks, H1LayoutType } from "./_types/formatter";
 
 export interface TemplateConfig {
@@ -497,8 +497,9 @@ export function renderArticle(
       }
     : baseTemplate;
 
-  const customRenderer = new marked.Renderer();
-  const defaultRenderer = new marked.Renderer();
+  const markedInstance = new Marked();
+  const customRenderer = new Renderer();
+  const defaultRenderer = new Renderer();
 
   const tuneBlockStyle = (
     style: string,
@@ -703,7 +704,8 @@ export function renderArticle(
         const cleanS = s.replace(/margin\s*:\s*[^;]+;?/gi, "margin: 0;");
         return `<p style="${cleanS}"`;
       });
-      inner = inner.replace(/<input disabled="" type="checkbox">/gi, "");
+      // Remove checkbox spans rendered by customRenderer.checkbox to avoid double checkboxes
+      inner = inner.replace(/<span style="[^"]*width: 12px; height: 12px;[^"]*">.*?<\/span>/gi, "");
 
       let icon = "";
       if (item.task) {
@@ -841,13 +843,86 @@ export function renderArticle(
       : '<span style="display: inline-block; width: 12px; height: 12px; border: 1px solid #9ca3af; margin-right: 4px;"></span>';
   };
 
-  marked.setOptions({
+  markedInstance.use({
+    extensions: [
+      {
+        name: "highlight",
+        level: "inline",
+        start(src: string) {
+          return src.indexOf("==");
+        },
+        tokenizer(src: string) {
+          const match = /^==([^=]+)==/.exec(src);
+          if (match) {
+            const token = {
+              type: "highlight",
+              raw: match[0],
+              text: match[1],
+              tokens: [] as Tokens.Generic[],
+            };
+            this.lexer.inlineTokens(token.text, token.tokens);
+            return token;
+          }
+        },
+        renderer(token: Tokens.Generic) {
+          return `<mark style="background-color: ${hexToRgba(template.themeColor, 0.5)}; color: inherit; padding: 0 2px;">${this.parser.parseInline(token.tokens!)}</mark>`;
+        },
+      },
+      {
+        name: "superscript",
+        level: "inline",
+        start(src: string) {
+          return src.indexOf("^");
+        },
+        tokenizer(src: string) {
+          const match = /^\^([^^]+)\^/.exec(src);
+          if (match) {
+            const token = {
+              type: "superscript",
+              raw: match[0],
+              text: match[1],
+              tokens: [] as Tokens.Generic[],
+            };
+            this.lexer.inlineTokens(token.text, token.tokens);
+            return token;
+          }
+        },
+        renderer(token: Tokens.Generic) {
+          return `<sup>${this.parser.parseInline(token.tokens!)}</sup>`;
+        },
+      },
+      {
+        name: "subscript",
+        level: "inline",
+        start(src: string) {
+          return src.indexOf("~");
+        },
+        tokenizer(src: string) {
+          // Avoid conflict with strikethrough (~~)
+          const match = /^~([^~\s][^~]*[^~\s])~/.exec(src);
+          if (match) {
+            const token = {
+              type: "subscript",
+              raw: match[0],
+              text: match[1],
+              tokens: [] as Tokens.Generic[],
+            };
+            this.lexer.inlineTokens(token.text, token.tokens);
+            return token;
+          }
+        },
+        renderer(token: Tokens.Generic) {
+          return `<sub>${this.parser.parseInline(token.tokens!)}</sub>`;
+        },
+      },
+    ],
+  });
+
+  const innerHtml = markedInstance.parse(markdownText, {
     renderer: customRenderer,
     breaks: true,
     gfm: true,
-  });
-
-  const innerHtml = marked.parse(markdownText) as string;
+  }) as string;
   const articleContainerStyle = ensureStyleValue(
     ensureStyleValue(
       `${template.containerStyle} font-size: ${formatTweaks.fontSize}px; line-height: ${formatTweaks.lineHeight}; letter-spacing: ${formatTweaks.letterSpacing}px; color: ${template.baseStyle.color}; font-family: ${template.baseStyle.fontFamily}; word-wrap: break-word; word-break: break-all; box-sizing: border-box;`,
