@@ -1,4 +1,4 @@
-# 项目指南：公众号一键排版助手 (WeChat Formatter)
+# 项目指南：公众号一键排版助手 Pro (WeChat Formatter Pro)
 
 ## 项目概述
 
@@ -20,7 +20,7 @@ TypeZen 是一款专为微信公众号设计的「Markdown 转微信排版」辅
 ## 项目结构
 
 ```
-wechat-formatter/
+wechat-formatter-pro/
 ├── app/
 │   ├── _components/              # 页面拆分组件（编辑区、预览区、设置面板、AI 配置弹窗等）
 │   ├── _hooks/                   # 业务 hooks（AI 排版、AI 配置、复制、滚动同步、主题等）
