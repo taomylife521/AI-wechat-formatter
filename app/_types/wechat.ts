@@ -4,7 +4,13 @@ export type WeChatAccountConfig = {
   author: string;
 };
 
-export type WeChatSyncStatus = "idle" | "authorizing" | "uploading_images" | "creating_draft" | "success" | "error";
+export type WeChatSyncStatus =
+  | "idle"
+  | "authorizing"
+  | "uploading_images"
+  | "creating_draft"
+  | "success"
+  | "error";
 
 export type WeChatSyncRequest = {
   html: string;
