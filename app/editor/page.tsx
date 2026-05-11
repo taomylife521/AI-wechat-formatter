@@ -1,28 +1,29 @@
 "use client";
 
+import { track } from "@vercel/analytics";
 import { useMemo, useRef, useState } from "react";
 import { AiConfigModal } from "../_components/ai-config-modal";
+import { AppFooter } from "../_components/app-footer";
 import { AppHeader } from "../_components/app-header";
 import { ImageInsertModal } from "../_components/image-insert-modal";
 import { MarkdownEditorPane } from "../_components/markdown-editor-pane";
 import { PreviewPane } from "../_components/preview-pane";
 import { RewardModal } from "../_components/reward-modal";
 import { SettingsPane } from "../_components/settings-pane";
-import { AppFooter } from "../_components/app-footer";
 import { Toast } from "../_components/toast";
-import { sampleText } from "../_lib/formatter-constants";
-import type { ActiveTab, FormatTweaks } from "../_types/formatter";
+import { WeChatSyncModal } from "../_components/wechat-sync-modal";
 import { useAiFormat } from "../_hooks/use-ai-format";
 import { useAiSettings } from "../_hooks/use-ai-settings";
-import { useWeChatSettings } from "../_hooks/use-wechat-settings";
 import { useClipboardCopy } from "../_hooks/use-clipboard-copy";
 import { useMarkdownTools } from "../_hooks/use-markdown-tools";
 import { useScrollSync } from "../_hooks/use-scroll-sync";
 import { useTheme } from "../_hooks/use-theme";
 import { useToast } from "../_hooks/use-toast";
+import { useWeChatSettings } from "../_hooks/use-wechat-settings";
 import { useWordCount } from "../_hooks/use-word-count";
+import { sampleText } from "../_lib/formatter-constants";
+import type { ActiveTab, FormatTweaks } from "../_types/formatter";
 import { allTemplates, groupedTemplates, renderArticle } from "../template-engine";
-import { WeChatSyncModal } from "../_components/wechat-sync-modal";
 
 const DEFAULT_FORMAT_TWEAKS: FormatTweaks = {
   fontSize: 16,
@@ -111,6 +112,7 @@ export default function Home() {
   }, [inputText, currentTemplate, formatTweaks, imageMap]);
 
   const handleCopy = () => {
+    track("copy_clicked");
     copyToClipboard(outputHtml);
   };
 
@@ -170,7 +172,10 @@ export default function Home() {
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
           onShowReward={() => setShowReward(true)}
-          onShowWeChatSync={() => setShowWeChatModal(true)}
+          onShowWeChatSync={() => {
+            track("publish_modal_opened");
+            setShowWeChatModal(true);
+          }}
           onCopy={handleCopy}
           hasContent={Boolean(inputText.trim())}
           activeTab={activeTab}

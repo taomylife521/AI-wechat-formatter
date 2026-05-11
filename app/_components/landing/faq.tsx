@@ -1,26 +1,26 @@
-import { Plus, Minus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 
 const faqs = [
   {
     q: "TypeZen 真的完全免费吗？",
-    a: "是的，TypeZen 的核心编辑、72 套精美模板以及基础转换功能目前完全免费提供。我们的目标是为公众号创作者提供最纯粹的排版工具。"
+    a: "核心编辑、72 套模板、AI 排版（BYO Key）和一键复制功能完全免费，永久保留。专业版（Early Access，¥199/年）提供微信公众号自动同步、图片转存等发布自动化功能，用于维护服务器和持续开发。",
   },
   {
     q: "AI 排版功能是如何运作的？",
-    a: "TypeZen 支持通过填入您自己的 OpenAI、Anthropic 或 OpenRouter API Key 来启用 AI 智能排版。这意味着数据传输发生在您的浏览器和大模型服务商之间，我们不触碰您的文章内容，确保极高的隐私性。"
+    a: "TypeZen 支持通过填入您自己的 OpenAI、Anthropic 或 OpenRouter API Key 来启用 AI 智能排版。AI 排版请求会临时经过 TypeZen 服务端转发到您选择的模型服务，我们不会持久化保存您的文章内容和 API Key。",
   },
   {
     q: "模版库会更新吗？",
-    a: "我们会定期根据设计趋势和用户反馈，更新和增加新的排版模板。目前已涵盖新粗野、极简、商务、文艺、科技、节庆等 6 大核心风格。"
+    a: "我们会定期根据设计趋势和用户反馈，更新和增加新的排版模板。目前已涵盖新粗野、极简、商务、文艺、科技、节庆等 6 大核心风格。",
   },
   {
     q: "为什么我复制过去后图片不显示？",
-    a: "如果您使用了本地上传的图片，微信后台需要一定时间来‘转存’这些图片。建议在粘贴后等待 1-2 秒，或者使用 TypeZen 提供的‘公众号同步’功能进行一键同步。"
+    a: "如果您使用了本地上传的图片，微信后台需要一定时间来’转存’这些图片。建议在粘贴后等待 1-2 秒。专业版用户可使用自动同步功能，系统会自动将图片转存到微信服务器。",
   },
   {
-    q: "支持数学公式和代码高亮吗？",
-    a: "完美支持！我们内置了渲染引擎，可以将 Markdown 中的 LaTeX 公式和主流编程语言代码块完美转化为微信兼容的图片或富文本格式。"
-  }
+    q: "支持代码块和表格吗？",
+    a: "支持！代码块、表格、引用、图片等 Markdown 元素均可正确渲染为微信兼容的内联样式 HTML，粘贴到公众号后台即可保持样式不变。",
+  },
 ];
 
 export function LandingFAQ() {
@@ -38,7 +38,10 @@ export function LandingFAQ() {
 
         <div className="space-y-6">
           {faqs.map((faq) => (
-            <details key={faq.q} className="group neo-panel bg-white [&_summary::-webkit-details-marker]:hidden">
+            <details
+              key={faq.q}
+              className="group neo-panel bg-white [&_summary::-webkit-details-marker]:hidden"
+            >
               <summary className="flex items-center justify-between p-6 font-black cursor-pointer text-xl text-(--neo-ink)">
                 {faq.q}
                 <div className="w-10 h-10 border-[3px] border-(--neo-ink) flex items-center justify-center bg-(--neo-yellow) shadow-[2px_2px_0px_var(--neo-shadow-core)] group-open:bg-(--neo-pink) transition-colors">

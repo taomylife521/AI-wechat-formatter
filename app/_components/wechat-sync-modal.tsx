@@ -1,3 +1,4 @@
+import { track } from "@vercel/analytics";
 import {
   ExternalLink,
   HelpCircle,
@@ -83,6 +84,7 @@ export function WeChatSyncModal({
 
     setStatus("authorizing");
     setErrorDetails("");
+    track("wechat_sync_started");
 
     try {
       // 模拟步骤感，让用户觉得程序在努力工作
@@ -125,9 +127,11 @@ export function WeChatSyncModal({
       if (data.success) {
         setStatus("success");
         showToast("同步成功！", "success");
+        track("wechat_sync_succeeded");
       } else {
         setStatus("error");
         setErrorDetails(data.details || data.error || "未知错误");
+        track("wechat_sync_failed", { error: data.error || "unknown" });
         // 如果后端返回了精准检测到的 IP，更新它
         if (data.detectedIp) {
           setServerIp(data.detectedIp);
@@ -136,6 +140,7 @@ export function WeChatSyncModal({
     } catch (err: unknown) {
       setStatus("error");
       setErrorDetails(err instanceof Error ? err.message : "请求失败");
+      track("wechat_sync_failed", { error: "network_error" });
     }
   };
 
@@ -577,7 +582,8 @@ export function WeChatSyncModal({
               </div>
 
               <p className="text-[9px] neo-text-muted font-bold text-center">
-                * 敏感凭证仅加密存储在您的浏览器本地 (Local Storage)
+                * AppID / AppSecret 默认保存在浏览器本地；同步时会临时发送至服务端调用微信
+                API，TypeZen 不会持久化保存您的凭证
               </p>
             </div>
           )}

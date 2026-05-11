@@ -1,12 +1,13 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { 
-  getWeChatAccessToken, 
-  processHtmlImages, 
-  uploadCoverToWeChat, 
-  addWeChatDraft 
-} from "../utils";
 import axios from "axios";
+import { type NextRequest, NextResponse } from "next/server";
 import type { WeChatSyncRequest } from "../../../_types/wechat";
+import {
+  addWeChatDraft,
+  getWeChatAccessToken,
+  processHtmlImages,
+  uploadCoverToWeChat,
+  WeChatApiError,
+} from "../utils";
 
 export const runtime = "nodejs"; // 必须使用 nodejs runtime 以支持 sharp 和 jsdom
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!html || !title || !config.appId || !config.appSecret) {
       return NextResponse.json(
         { success: false, error: "参数不完整，请检查配置" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,9 +30,9 @@ export async function POST(req: NextRequest) {
           return Buffer.from(url.split(",")[1], "base64");
         }
         if (url.startsWith("http")) {
-          const res = await axios.get(url, { 
+          const res = await axios.get(url, {
             responseType: "arraybuffer",
-            timeout: 5000 
+            timeout: 5000,
           });
           return Buffer.from(res.data);
         }
@@ -49,15 +50,15 @@ export async function POST(req: NextRequest) {
       accessToken = await getWeChatAccessToken(config.appId, config.appSecret);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      const detectedIp = (err as any)?.detectedIp || "";
+      const detectedIp = err instanceof WeChatApiError ? err.detectedIp : "";
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "微信授权失败", 
+        {
+          success: false,
+          error: "微信授权失败",
           details: message,
-          detectedIp: detectedIp 
+          detectedIp: detectedIp,
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
       const message = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
         { success: false, error: "内容处理失败 (JSDOM/Sharp)", details: message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -81,8 +82,8 @@ export async function POST(req: NextRequest) {
 
       if (coverImage) {
         coverBuffer = await getSafeImageBuffer(coverImage);
-      } 
-      
+      }
+
       if (!coverBuffer) {
         // 如果没传封面图或获取失败，尝试从 HTML 中提取第一张
         const imgMatch = html.match(/<img[^>]+src="([^">]+)"/i);
@@ -100,13 +101,16 @@ export async function POST(req: NextRequest) {
       const message = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
         { success: false, error: "封面图上传失败", details: message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // 4. 生成摘要
     const safeMarkdown = markdown || "";
-    const digest = safeMarkdown.slice(0, 120).replace(/#|\*|`|>|\[|\]|\(|\)/g, "").trim();
+    const digest = safeMarkdown
+      .slice(0, 120)
+      .replace(/#|\*|`|>|\[|\]|\(|\)/g, "")
+      .trim();
 
     // 5. 新建草稿
     const mediaId = await addWeChatDraft(
@@ -115,20 +119,19 @@ export async function POST(req: NextRequest) {
       finalHtml,
       thumbMediaId,
       config.author,
-      digest
+      digest,
     );
 
     return NextResponse.json({
       success: true,
-      mediaId
+      mediaId,
     });
-
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("WeChat sync global error:", err);
     return NextResponse.json(
       { success: false, error: "服务器异常", details: message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

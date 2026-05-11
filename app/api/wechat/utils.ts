@@ -3,42 +3,59 @@ import sharp from "sharp";
 
 const WECHAT_API_BASE = "https://api.weixin.qq.com/cgi-bin";
 
+export class WeChatApiError extends Error {
+  readonly errcode: number;
+  readonly detectedIp: string;
+
+  constructor(message: string, errcode: number, detectedIp = "") {
+    super(message);
+    this.name = "WeChatApiError";
+    this.errcode = errcode;
+    this.detectedIp = detectedIp;
+  }
+}
+
 /**
  * 获取微信 Access Token
  */
 export async function getWeChatAccessToken(appId: string, appSecret: string): Promise<string> {
   const url = `${WECHAT_API_BASE}/token?grant_type=client_credential&appid=${appId}&secret=${appSecret}`;
   const res = await axios.get(url, { timeout: 10000 });
-  
+
   if (res.data.errcode) {
     const errMsg = res.data.errmsg || "";
     if (res.data.errcode === 40164) {
       const ipMatch = errMsg.match(/invalid ip ([0-9.]+)/);
       const detectedIp = ipMatch ? ipMatch[1] : "";
-      const error = new Error(detectedIp ? `IP白名单错误：请将 IP [${detectedIp}] 加入微信后台白名单` : errMsg);
-      (error as any).errcode = 40164;
-      (error as any).detectedIp = detectedIp;
-      throw error;
+      throw new WeChatApiError(
+        detectedIp ? `IP白名单错误：请将 IP [${detectedIp}] 加入微信后台白名单` : errMsg,
+        40164,
+        detectedIp,
+      );
     }
     throw new Error(`获取授权失败: ${res.data.errmsg} (${res.data.errcode})`);
   }
-  
+
   return res.data.access_token;
 }
 
 /**
  * 上传正文图片到微信服务器
  */
-export async function uploadImageToWeChat(accessToken: string, imageBuffer: Buffer, filename: string): Promise<string> {
+export async function uploadImageToWeChat(
+  accessToken: string,
+  imageBuffer: Buffer,
+  filename: string,
+): Promise<string> {
   // 微信要求图片 < 1MB 且仅支持 jpg/png
   let processedBuffer = imageBuffer;
-  
+
   try {
     // 仅当图片 > 1MB 时才尝试使用 sharp 压缩，减少 native 模块调用压力
     if (imageBuffer.length > 1024 * 1024) {
       processedBuffer = await sharp(imageBuffer)
         .resize(1080, undefined, { withoutEnlargement: true })
-        .toFormat('jpeg', { quality: 80 })
+        .toFormat("jpeg", { quality: 80 })
         .toBuffer();
     }
   } catch (e) {
@@ -51,34 +68,42 @@ export async function uploadImageToWeChat(accessToken: string, imageBuffer: Buff
 
   const url = `${WECHAT_API_BASE}/media/uploadimg?access_token=${accessToken}`;
   const formData = new FormData();
-  const blob = new Blob([new Uint8Array(processedBuffer)], { type: 'image/jpeg' });
-  formData.append('media', blob, filename.endsWith('.png') || filename.endsWith('.jpg') ? filename : `${filename}.jpg`);
+  const blob = new Blob([new Uint8Array(processedBuffer)], { type: "image/jpeg" });
+  formData.append(
+    "media",
+    blob,
+    filename.endsWith(".png") || filename.endsWith(".jpg") ? filename : `${filename}.jpg`,
+  );
 
   const res = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: formData,
-    signal: AbortSignal.timeout(15000) // 15秒超时
+    signal: AbortSignal.timeout(15000), // 15秒超时
   });
-  
+
   const data = await res.json();
   if (data.errcode) {
     throw new Error(`图片上传失败: ${data.errmsg}`);
   }
-  
+
   return data.url;
 }
 
 /**
  * 上传封面图（永久素材）
  */
-export async function uploadCoverToWeChat(accessToken: string, imageBuffer: Buffer, filename: string): Promise<string> {
+export async function uploadCoverToWeChat(
+  accessToken: string,
+  imageBuffer: Buffer,
+  filename: string,
+): Promise<string> {
   let processedBuffer = imageBuffer;
-  
+
   try {
     // 封面图强制进行比例裁剪和压缩以符合微信推荐规格 (900x383)
     processedBuffer = await sharp(imageBuffer)
-      .resize(900, 383, { fit: 'cover' })
-      .toFormat('jpeg', { quality: 85 })
+      .resize(900, 383, { fit: "cover" })
+      .toFormat("jpeg", { quality: 85 })
       .toBuffer();
   } catch (e) {
     console.error("Cover sharp processing failed:", e);
@@ -87,20 +112,20 @@ export async function uploadCoverToWeChat(accessToken: string, imageBuffer: Buff
 
   const url = `${WECHAT_API_BASE}/material/add_material?access_token=${accessToken}&type=image`;
   const formData = new FormData();
-  const blob = new Blob([new Uint8Array(processedBuffer)], { type: 'image/jpeg' });
-  formData.append('media', blob, filename);
+  const blob = new Blob([new Uint8Array(processedBuffer)], { type: "image/jpeg" });
+  formData.append("media", blob, filename);
 
   const res = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: formData,
-    signal: AbortSignal.timeout(20000)
+    signal: AbortSignal.timeout(20000),
   });
-  
+
   const data = await res.json();
   if (data.errcode) {
     throw new Error(`封面上传失败: ${data.errmsg}`);
   }
-  
+
   return data.media_id;
 }
 
@@ -130,9 +155,9 @@ export async function processHtmlImages(accessToken: string, html: string): Prom
         const mime = src.match(/data:image\/([^;]+);/)?.[1] || "jpeg";
         filename = `image.${mime}`;
       } else if (src.startsWith("http")) {
-        const res = await axios.get(src, { 
-          responseType: "arraybuffer", 
-          timeout: 8000 
+        const res = await axios.get(src, {
+          responseType: "arraybuffer",
+          timeout: 8000,
         });
         imageBuffer = Buffer.from(res.data);
         filename = src.split("/").pop() || "image.jpg";
@@ -141,12 +166,12 @@ export async function processHtmlImages(accessToken: string, html: string): Prom
       }
 
       const wechatUrl = await uploadImageToWeChat(accessToken, imageBuffer, filename);
-      
+
       // 生成新的标签，保留原有的 class/style 等属性，仅替换 src 和增加 data-src
       const newTag = fullTag
         .replace(/src="[^">]+"/i, `src="${wechatUrl}"`)
         .replace(/>$/, ` data-src="${wechatUrl}">`);
-      
+
       finalHtml = finalHtml.replace(fullTag, newTag);
     } catch (err) {
       console.error(`Skipping image [${src}] due to error:`, err);
@@ -165,25 +190,27 @@ export async function addWeChatDraft(
   content: string,
   thumbMediaId: string,
   author: string = "",
-  digest: string = ""
+  digest: string = "",
 ): Promise<string> {
   const url = `${WECHAT_API_BASE}/draft/add?access_token=${accessToken}`;
-  
+
   const res = await axios.post(url, {
-    articles: [{
-      title,
-      author,
-      digest,
-      content,
-      thumb_media_id: thumbMediaId,
-      need_open_comment: 0,
-      only_fans_can_comment: 0
-    }]
+    articles: [
+      {
+        title,
+        author,
+        digest,
+        content,
+        thumb_media_id: thumbMediaId,
+        need_open_comment: 0,
+        only_fans_can_comment: 0,
+      },
+    ],
   });
-  
+
   if (res.data.errcode) {
     throw new Error(`新建草稿失败: ${res.data.errmsg} (${res.data.errcode})`);
   }
-  
+
   return res.data.media_id;
 }
