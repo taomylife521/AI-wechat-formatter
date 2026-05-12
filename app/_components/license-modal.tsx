@@ -50,7 +50,7 @@ export function LicenseModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center neo-modal-backdrop animate-in fade-in duration-200"
+      className="fixed inset-0 z-[70] flex items-center justify-center neo-modal-backdrop animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div

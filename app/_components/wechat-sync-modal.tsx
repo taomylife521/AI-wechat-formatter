@@ -157,6 +157,30 @@ export function WeChatSyncModal({
     }
   };
 
+  const handleDetectIp = async () => {
+    setStatus("authorizing");
+    setErrorDetails("");
+
+    try {
+      const response = await fetch("/api/wechat/ip");
+      const data = (await response.json()) as { ip?: string; isManualRequired?: boolean };
+      const detectedIp = data.ip?.trim();
+
+      if (detectedIp && !data.isManualRequired) {
+        setServerIp(detectedIp);
+        showToast("出口 IP 已获取", "success");
+      } else {
+        setErrorDetails(detectedIp || "暂时无法自动获取出口 IP");
+        showToast("暂时无法自动获取出口 IP", "error");
+      }
+    } catch (err: unknown) {
+      setErrorDetails(err instanceof Error ? err.message : "IP 探测失败");
+      showToast("IP 探测失败，请稍后重试", "error");
+    } finally {
+      setStatus("idle");
+    }
+  };
+
   const handleSaveConfig = () => {
     onSaveConfig(draftConfig);
     showToast("配置已保存到本地", "success");
@@ -580,7 +604,7 @@ export function WeChatSyncModal({
 
                   <div className="space-y-2">
                     <button
-                      onClick={handleSync}
+                      onClick={handleDetectIp}
                       disabled={
                         status === "authorizing" ||
                         status === "uploading_images" ||
