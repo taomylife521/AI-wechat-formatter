@@ -18,9 +18,15 @@ export type PlatformCapabilities = {
   supportsDraft: boolean;
 };
 
+export type WeChatCredentials = {
+  appId: string;
+  appSecret?: string; // 本地 adapter 必需；remote adapter 不使用
+  author?: string;
+};
+
 export type CreateDraftInput = {
   article: CanonicalArticle;
-  credentials: Record<string, string>;
+  credentials: WeChatCredentials;
 };
 
 export type CreateDraftResult = {
