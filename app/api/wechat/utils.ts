@@ -6,12 +6,14 @@ const WECHAT_API_BASE = "https://api.weixin.qq.com/cgi-bin";
 export class WeChatApiError extends Error {
   readonly errcode: number;
   readonly detectedIp: string;
+  readonly rawMessage: string;
 
-  constructor(message: string, errcode: number, detectedIp = "") {
+  constructor(message: string, errcode: number, detectedIp = "", rawMessage = "") {
     super(message);
     this.name = "WeChatApiError";
     this.errcode = errcode;
     this.detectedIp = detectedIp;
+    this.rawMessage = rawMessage || message;
   }
 }
 
@@ -23,17 +25,19 @@ export async function getWeChatAccessToken(appId: string, appSecret: string): Pr
   const res = await axios.get(url, { timeout: 10000 });
 
   if (res.data.errcode) {
-    const errMsg = res.data.errmsg || "";
-    if (res.data.errcode === 40164) {
+    const errMsg: string = res.data.errmsg || "";
+    const errcode: number = res.data.errcode;
+    if (errcode === 40164) {
       const ipMatch = errMsg.match(/invalid ip ([0-9.]+)/);
       const detectedIp = ipMatch ? ipMatch[1] : "";
       throw new WeChatApiError(
         detectedIp ? `IP白名单错误：请将 IP [${detectedIp}] 加入微信后台白名单` : errMsg,
         40164,
         detectedIp,
+        errMsg,
       );
     }
-    throw new Error(`获取授权失败: ${res.data.errmsg} (${res.data.errcode})`);
+    throw new WeChatApiError(`获取授权失败: ${errMsg} (${errcode})`, errcode, "", errMsg);
   }
 
   return res.data.access_token;

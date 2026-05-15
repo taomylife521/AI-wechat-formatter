@@ -13,6 +13,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type {
   WeChatAccountConfig,
+  WeChatIpDiagnosticResponse,
+  WeChatIpDiagnosticStatus,
   WeChatSyncRequest,
   WeChatSyncResponse,
   WeChatSyncStatus,
@@ -54,12 +56,18 @@ export function WeChatSyncModal({
   const [coverImage, setCoverImage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // IP 诊断独立状态
+  const [ipDiagnosticStatus, setIpDiagnosticStatus] = useState<WeChatIpDiagnosticStatus>("idle");
+  const [ipDiagnosticMessage, setIpDiagnosticMessage] = useState<string>("");
+
   useEffect(() => {
     if (open) {
       setDraftConfig(config);
       setEditTitle(title);
       setErrorDetails("");
       setStatus("idle");
+      setIpDiagnosticStatus("idle");
+      setIpDiagnosticMessage("");
 
       // 自动尝试从 HTML 提取第一张图作为默认封面预览
       const imgMatch = html.match(/<img[^>]+src="([^">]+)"/i);
@@ -154,6 +162,73 @@ export function WeChatSyncModal({
       setStatus("error");
       setErrorDetails(err instanceof Error ? err.message : "请求失败");
       track("wechat_sync_failed", { error: "network_error" });
+    }
+  };
+
+  const isSyncing =
+    status === "authorizing" || status === "uploading_images" || status === "creating_draft";
+
+  const handleDetectIp = async () => {
+    if (!isLicenseActive) {
+      onShowLicense();
+      return;
+    }
+
+    if (!draftConfig.appId || !draftConfig.appSecret) {
+      setActiveTab("config");
+      showToast("请先完成公众号配置", "error");
+      return;
+    }
+
+    setIpDiagnosticStatus("checking");
+    setIpDiagnosticMessage("");
+    track("wechat_ip_diagnostic_started");
+
+    try {
+      const response = await fetch("/api/wechat/ip-diagnostic", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-TypeZen-License": licenseKey,
+        },
+        body: JSON.stringify({ config: { appId: draftConfig.appId, appSecret: draftConfig.appSecret } }),
+      });
+
+      let data: WeChatIpDiagnosticResponse;
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(
+          response.ok
+            ? "服务器响应格式错误"
+            : `服务器错误 (${response.status}): ${text.slice(0, 100)}`,
+        );
+      }
+
+      setIpDiagnosticMessage(data.message);
+
+      if (data.status === "authorized") {
+        setIpDiagnosticStatus("authorized");
+        track("wechat_ip_diagnostic_authorized");
+      } else if (data.status === "invalid_ip" && data.detectedIp) {
+        setIpDiagnosticStatus("captured");
+        setServerIp(data.detectedIp);
+        track("wechat_ip_diagnostic_captured");
+      } else if (data.status === "remote_worker_mode") {
+        setIpDiagnosticStatus("idle");
+        setIpDiagnosticMessage(data.message);
+        track("wechat_ip_diagnostic_remote_worker");
+      } else {
+        setIpDiagnosticStatus("error");
+        track("wechat_ip_diagnostic_failed", { status: data.status });
+      }
+    } catch (err: unknown) {
+      setIpDiagnosticStatus("error");
+      setIpDiagnosticMessage(err instanceof Error ? err.message : "诊断请求失败");
+      track("wechat_ip_diagnostic_failed", { error: "network_error" });
     }
   };
 
@@ -347,8 +422,7 @@ export function WeChatSyncModal({
                         <p className="text-xs font-black">同步提示</p>
                         <p className="text-[10px] font-bold leading-relaxed text-(--neo-ink)/80">
                           同步过程将自动把正文中的外部图片、Base64
-                          图片转存到微信服务器。如遇 IP 白名单错误，可在账号配置页探测当前服务端出口 IP
-                          并加入微信后台白名单。
+                          图片转存到微信服务器。账号配置页可进行授权 / IP 白名单诊断；诊断只调用微信授权接口，不会上传图片或创建草稿。
                         </p>
                       </div>
                     </div>
@@ -370,7 +444,8 @@ export function WeChatSyncModal({
 
                   <button
                     onClick={handleSync}
-                    className={`neo-button w-full py-5 text-xl font-black flex items-center justify-center gap-3 transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_0_rgba(0,0,0,1)] ${
+                    disabled={ipDiagnosticStatus === "checking"}
+                    className={`neo-button w-full py-5 text-xl font-black flex items-center justify-center gap-3 transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_0_rgba(0,0,0,1)] disabled:opacity-50 ${
                       isLicenseActive
                         ? "bg-(--neo-green) text-white"
                         : "bg-(--neo-yellow) text-(--neo-ink)"
@@ -444,7 +519,8 @@ export function WeChatSyncModal({
 
                   <button
                     onClick={handleSync}
-                    className="neo-button bg-(--neo-green) text-white w-full py-4 text-lg font-black flex items-center justify-center gap-2 shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                    disabled={ipDiagnosticStatus === "checking"}
+                    className="neo-button bg-(--neo-green) text-white w-full py-4 text-lg font-black flex items-center justify-center gap-2 shadow-[4px_4px_0_0_rgba(0,0,0,1)] disabled:opacity-50"
                   >
                     <Loader2 className="w-5 h-5" />
                     重新尝试同步
@@ -550,7 +626,43 @@ export function WeChatSyncModal({
                 </p>
 
                 <div className="space-y-4">
-                  {!serverIp ? (
+                  {/* IP 诊断结果展示 */}
+                  {ipDiagnosticStatus === "authorized" ? (
+                    <div className="bg-(--neo-green)/10 border-2 border-(--neo-green) p-4 text-center">
+                      <p className="text-xs font-black text-(--neo-green) mb-1">
+                        当前出口已通过微信授权校验
+                      </p>
+                      <p className="text-[10px] font-bold text-(--neo-ink)/70 leading-relaxed">
+                        微信未返回 IP；如仅配置白名单，无需新增 IP。
+                      </p>
+                    </div>
+                  ) : ipDiagnosticStatus === "captured" && serverIp ? (
+                    <div className="bg-black text-white p-4 rounded-none border-2 border-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black text-(--neo-yellow) uppercase">
+                          当前出口 IP 已捕获
+                        </p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(serverIp);
+                            showToast("IP 已复制", "success");
+                          }}
+                          className="bg-white text-black px-2 py-0.5 text-[10px] font-black hover:bg-(--neo-yellow) transition-colors"
+                        >
+                          COPY
+                        </button>
+                      </div>
+                      <code className="text-xl font-mono block text-center py-1 tracking-wider">
+                        {serverIp}
+                      </code>
+                    </div>
+                  ) : ipDiagnosticStatus === "error" ? (
+                    <div className="bg-(--neo-pink)/10 border-2 border-(--neo-pink) p-4 text-center">
+                      <p className="text-xs font-black text-(--neo-pink) mb-1">
+                        {ipDiagnosticMessage || "诊断失败，请检查配置后重试"}
+                      </p>
+                    </div>
+                  ) : !serverIp ? (
                     <div className="bg-white/50 border-2 border-dashed border-(--neo-ink) p-4 text-center">
                       <p className="text-[11px] font-bold text-(--neo-ink) leading-relaxed">
                         尚未获取出口 IP。微信对 IP
@@ -581,50 +693,46 @@ export function WeChatSyncModal({
 
                   <div className="space-y-2">
                     <button
-                      onClick={handleSync}
-                      disabled={
-                        status === "authorizing" ||
-                        status === "uploading_images" ||
-                        status === "creating_draft"
-                      }
-                      className="w-full py-3 bg-white border-[3px] border-(--neo-ink) font-black text-xs hover:bg-(--neo-yellow) transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2"
+                      onClick={handleDetectIp}
+                      disabled={ipDiagnosticStatus === "checking" || isSyncing}
+                      className="w-full py-3 bg-white border-[3px] border-(--neo-ink) font-black text-xs hover:bg-(--neo-yellow) transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {status === "authorizing" ||
-                      status === "uploading_images" ||
-                      status === "creating_draft" ? (
+                      {ipDiagnosticStatus === "checking" ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Star className="w-4 h-4" />
                       )}
-                      {serverIp ? "重新探测 IP" : "点击探测当前出口 IP"}
+                      {serverIp || ipDiagnosticStatus === "authorized" ? "重新探测 IP" : "点击探测当前出口 IP"}
                     </button>
 
-                    <div className="bg-white/30 border-2 border-(--neo-ink) p-3 space-y-2">
-                      <p className="text-[10px] font-black flex items-center gap-1">
-                        <HelpCircle className="w-3 h-3" /> 如何配置？
-                      </p>
-                      <p className="text-[10px] font-medium leading-relaxed">
-                        1. 复制上方 IP <br />
-                        2. 登录 <span className="font-bold underline">微信公众平台</span> <br />
-                        3. 进入{" "}
-                        <span className="font-bold underline">
-                          设置与开发 - 基本配置 - IP白名单
-                        </span>{" "}
-                        <br />
-                        4. 粘贴并保存。生效通常需要{" "}
-                        <span className="text-(--neo-pink) font-bold">1-3 分钟</span>。
-                      </p>
-                      <p className="text-[9px] font-bold text-(--neo-ink)/70 leading-relaxed italic">
-                        提示：如果同步再次失败，或部署平台更换了出口 IP，请点击探测按钮重新捕获当前值。
-                      </p>
-                    </div>
+                    {/* 探测结果后展示配置指引 */}
+                    {(ipDiagnosticStatus === "captured" || (serverIp && ipDiagnosticStatus !== "error")) && (
+                      <div className="bg-white/30 border-2 border-(--neo-ink) p-3 space-y-2">
+                        <p className="text-[10px] font-black flex items-center gap-1">
+                          <HelpCircle className="w-3 h-3" /> 如何配置？
+                        </p>
+                        <p className="text-[10px] font-medium leading-relaxed">
+                          1. 复制上方 IP <br />
+                          2. 登录 <span className="font-bold underline">微信公众平台</span> <br />
+                          3. 进入{" "}
+                          <span className="font-bold underline">
+                            设置与开发 - 基本配置 - IP白名单
+                          </span>{" "}
+                          <br />
+                          4. 粘贴并保存。生效通常需要{" "}
+                          <span className="text-(--neo-pink) font-bold">1-3 分钟</span>。
+                        </p>
+                        <p className="text-[9px] font-bold text-(--neo-ink)/70 leading-relaxed italic">
+                          提示：如果同步再次失败，或部署平台更换了出口 IP，请点击探测按钮重新捕获当前值。
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               <p className="text-[9px] neo-text-muted font-bold text-center">
-                * AppID / AppSecret 默认保存在浏览器本地；同步时会临时发送至服务端调用微信
-                API，TypeZen 不会持久化保存您的凭证
+                * 该检测会调用微信 access_token 接口，可能刷新公众号全局 token；TypeZen 不会保存 token，也不会保存 AppSecret。
               </p>
             </div>
           )}

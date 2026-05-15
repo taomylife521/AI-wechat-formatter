@@ -396,3 +396,31 @@ Current default behavior:
 4. If WeChat rejects the request with an IP whitelist error, the app surfaces the detected current egress IP to the user.
 
 Do not set `SYNC_WORKER_URL` unless the worker has been deployed on a stable fixed-IP host and tested end to end.
+
+## 11. Current Non-Worker IP Diagnostic Design
+
+The project includes a standalone low-side-effect IP diagnostic endpoint at `POST /api/wechat/ip-diagnostic` that does not depend on the worker path.
+
+### 11.1 How It Works
+
+1. The endpoint only calls the WeChat `cgi-bin/token` endpoint — it never uploads images, creates drafts, or sends article content.
+2. If the token call succeeds, the endpoint returns `status: "authorized"` and does not return the `access_token`.
+3. If WeChat returns `40164 invalid ip x.x.x.x`, the endpoint parses the IP and returns `status: "invalid_ip"` with `detectedIp`.
+4. Credential errors (`40001`, `40125`, etc.) return `status: "invalid_credentials"`.
+5. The diagnostic is "low-side-effect", not "zero" — the token call may refresh the account's global `access_token`.
+
+### 11.2 Relationship to Full Sync
+
+- The diagnostic endpoint is independent of `/api/wechat/sync`. It exists so users can check their IP whitelist status without triggering a full sync flow.
+- The full sync endpoint still falls back to showing `detectedIp` from a `40164` error if the user runs a sync without running the diagnostic first.
+
+### 11.3 Remote Worker Consideration
+
+When `SYNC_WORKER_URL` is configured, the diagnostic endpoint returns `status: "remote_worker_mode"` and does not expose the Next.js egress IP. The reason: the actual sync traffic exits through the worker, so the Next.js IP is irrelevant to the user's WeChat whitelist configuration. Worker-side IP diagnostics should be performed through the worker's own health or diagnostic endpoint.
+
+### 11.4 Frontend Behavior
+
+- The "探测当前出口 IP" button in the account config tab calls `/api/wechat/ip-diagnostic` (not `/api/wechat/sync`).
+- Diagnostic and sync buttons are mutually disabled during concurrent execution to avoid parallel token calls.
+- When `detectedIp` is returned, the UI shows the IP with a copy button and WeChat backend path guidance.
+- When `authorized` is returned, the UI confirms the current egress passes validation and does not prompt the user to add an IP.

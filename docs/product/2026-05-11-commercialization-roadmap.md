@@ -286,13 +286,17 @@ Key implementation decisions:
 - Do not store AppSecret server-side in Phase 1.
 - Do not promise a fixed egress IP while the VPS/worker deployment is paused.
 - Do use the current app-hosted sync path with IP whitelist diagnostics, and keep the fixed-IP worker as an optional future path.
+- Do provide a standalone low-side-effect IP diagnostic (`POST /api/wechat/ip-diagnostic`) that only calls the WeChat `cgi-bin/token` endpoint — no image upload, no draft creation. The diagnostic is "low-side-effect" (not zero) because the token call may refresh the account's global `access_token`.
+- Phase 1 IP whitelist strategy: (a) standalone token-level diagnostic to capture the current egress IP recognized by WeChat; (b) fallback capture from `40164` during a full sync if the diagnostic was not run first; (c) both are "current egress IP diagnostics", not "fixed-IP guarantees".
+- If `SYNC_WORKER_URL` is configured, the diagnostic endpoint returns `remote_worker_mode` and does not expose the Next.js egress IP, because the actual sync traffic exits through the worker.
 - Do log sync metadata and errors without logging article body or secrets.
 
 Acceptance criteria:
 
 - A valid license key is required for WeChat sync.
 - Free users can still copy HTML manually.
-- WeChat sync surfaces the current server egress IP when WeChat returns an IP whitelist error.
+- The IP diagnostic endpoint (`/api/wechat/ip-diagnostic`) captures the current server egress IP from WeChat's `40164` error without creating a draft or uploading images.
+- Full sync still falls back to showing `detectedIp` from `40164` if the diagnostic was not run beforehand.
 - Product copy does not imply fixed-IP stability unless a fixed-IP worker is actually deployed and configured.
 - Failed syncs return clear, actionable errors.
 - Server logs redact AppID, AppSecret, API keys, article HTML, and Markdown.

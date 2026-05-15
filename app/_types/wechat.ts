@@ -27,3 +27,34 @@ export type WeChatSyncResponse = {
   details?: string;
   detectedIp?: string;
 };
+
+// --- IP Diagnostic types ---
+
+export type WeChatIpDiagnosticStatus =
+  | "idle"
+  | "checking"
+  | "captured"
+  | "authorized"
+  | "error";
+
+export type WeChatIpDiagnosticRequest = {
+  config: {
+    appId: string;
+    appSecret: string;
+  };
+};
+
+export type WeChatIpDiagnosticResponse = {
+  success: boolean;
+  status:
+    | "authorized"
+    | "invalid_ip"
+    | "invalid_credentials"
+    | "wechat_error"
+    | "remote_worker_mode"
+    | "error";
+  message: string;
+  errcode?: number;
+  details?: string;
+  detectedIp?: string;
+};

@@ -248,6 +248,7 @@ npm run lint
 - 已完成样式微调能力：字号、行高、段落间距、首行缩进、页面留白、字间距、图片圆角和主题色
 - 已完成站点配置常量化，metadata、JSON-LD、manifest、robots、sitemap 共用 `lib/site-config.ts` 的品牌与 URL 信息
 - 已迁移到 Biome 进行代码检查与格式化
+- 已拆分低副作用微信 IP 白名单诊断接口 (`POST /api/wechat/ip-diagnostic`)，探测不再创建草稿或上传图片
 
 ### 商业化规划记录
 
