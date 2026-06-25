@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { verifyLicense } from "../../../_lib/license";
 import { getWeChatAdapter } from "../../../_lib/publishing/adapters";
 import type { CanonicalArticle, WeChatCredentials } from "../../../_lib/publishing/types";
 import type { WeChatSyncRequest } from "../../../_types/wechat";
@@ -7,16 +6,6 @@ import type { WeChatSyncRequest } from "../../../_types/wechat";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  // 0. License 校验（header，先于 body 解析）
-  const licenseKey = req.headers.get("x-typezen-license") || "";
-  const licenseResult = verifyLicense(licenseKey);
-  if (!licenseResult.valid) {
-    return NextResponse.json(
-      { success: false, error: licenseResult.error || "License 无效" },
-      { status: 403 },
-    );
-  }
-
   try {
     const body = (await req.json()) as WeChatSyncRequest;
     const { html, title, config, coverImage, markdown } = body;

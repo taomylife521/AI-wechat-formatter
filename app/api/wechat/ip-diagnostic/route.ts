@@ -1,22 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { verifyLicense } from "../../../_lib/license";
 import type { WeChatIpDiagnosticRequest, WeChatIpDiagnosticResponse } from "../../../_types/wechat";
 import { WeChatApiError, getWeChatAccessToken } from "../utils";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  // 1. License 校验
-  const licenseKey = req.headers.get("x-typezen-license") || "";
-  const licenseResult = verifyLicense(licenseKey);
-  if (!licenseResult.valid) {
-    return NextResponse.json(
-      { success: false, status: "error", message: licenseResult.error || "License 无效" } satisfies WeChatIpDiagnosticResponse,
-      { status: 403 },
-    );
-  }
-
-  // 2. 解析 body
   let body: WeChatIpDiagnosticRequest;
   try {
     body = await req.json();
@@ -35,7 +23,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3. 远程 Worker 模式：Next.js 本地出口 IP 无意义
+  // 远程 Worker 模式：Next.js 本地出口 IP 无意义
   if (process.env.SYNC_WORKER_URL) {
     return NextResponse.json({
       success: true,
@@ -45,10 +33,9 @@ export async function POST(req: NextRequest) {
     } satisfies WeChatIpDiagnosticResponse);
   }
 
-  // 4. 本地 adapter 模式：调用微信 token 接口探测
+  // 本地 adapter 模式：调用微信 token 接口探测
   try {
     await getWeChatAccessToken(config.appId, config.appSecret);
-    // token 请求成功 → 不返回 access_token
     return NextResponse.json({
       success: true,
       status: "authorized",
@@ -60,24 +47,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           status: "invalid_ip",
-          message: `微信识别到的出口 IP 未在白名单中，请将下方 IP 加入微信后台。`,
+          message: "微信识别到的出口 IP 未在白名单中，请将下方 IP 加入微信后台。",
           errcode: 40164,
           detectedIp: err.detectedIp || undefined,
         } satisfies WeChatIpDiagnosticResponse);
       }
 
-      // 凭证类错误
       if (err.errcode === 40001 || err.errcode === 40125 || err.errcode === 40013 || err.errcode === 40163) {
         return NextResponse.json({
           success: false,
           status: "invalid_credentials",
-          message: `AppID 或 AppSecret 错误，请检查后重试。`,
+          message: "AppID 或 AppSecret 错误，请检查后重试。",
           errcode: err.errcode,
           details: err.rawMessage,
         } satisfies WeChatIpDiagnosticResponse);
       }
 
-      // 其他微信错误
       return NextResponse.json({
         success: false,
         status: "wechat_error",
@@ -87,7 +72,6 @@ export async function POST(req: NextRequest) {
       } satisfies WeChatIpDiagnosticResponse);
     }
 
-    // 网络或其他未知错误
     const message = err instanceof Error ? err.message : "未知错误";
     console.error("IP diagnostic error:", message);
     return NextResponse.json(

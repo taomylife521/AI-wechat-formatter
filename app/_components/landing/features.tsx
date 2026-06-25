@@ -24,16 +24,16 @@ const features = [
   },
   {
     icon: <Copy className="w-8 h-8" />,
-    title: "一键复制与自动同步",
+    title: "一键复制直接发布",
     description:
-      "免费版支持一键复制富文本，粘贴到公众号后台即可发布。专业版（Early Access）提供官方 API 同步，自动转存图片并创建草稿。",
+      "排版完成后一键复制富文本，直接粘贴到微信公众号后台即可发布。支持图片直接粘贴与多图并排布局，操作简单高效。",
     color: "var(--neo-green)",
   },
   {
     icon: <Shield className="w-8 h-8" />,
     title: "本地数据隐私安全",
     description:
-      "编辑与预览默认在本地浏览器完成。启用 AI 排版或微信同步时，仅为完成请求临时发送必要内容，我们不会持久化保存文章和私密密钥。",
+      "编辑与预览默认在本地浏览器完成。启用 AI 排版时，仅为完成请求临时发送必要内容，我们不会持久化保存文章和私密密钥。",
     color: "var(--neo-pink)",
   },
   {
@@ -54,7 +54,7 @@ export function LandingFeatures() {
             核心功能特性
           </h2>
           <p className="text-xl font-bold text-(--neo-muted) max-w-2xl mx-auto">
-            TypeZen 提供从 Markdown 编辑到微信同步的全链路功能，显著提升内容创作效率。
+            TypeZen 提供从 Markdown 编辑到公众号发布的全链路功能，显著提升内容创作效率。
           </p>
         </div>
 

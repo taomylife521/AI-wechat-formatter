@@ -64,14 +64,6 @@ export function LandingFooter() {
               </li>
               <li>
                 <Link
-                  href="#pricing"
-                  className="font-bold text-(--neo-muted) hover:text-(--neo-ink) transition-colors text-sm"
-                >
-                  定价版本
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="#faq"
                   className="font-bold text-(--neo-muted) hover:text-(--neo-ink) transition-colors text-sm"
                 >

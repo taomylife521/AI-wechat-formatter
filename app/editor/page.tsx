@@ -6,7 +6,6 @@ import { AiConfigModal } from "../_components/ai-config-modal";
 import { AppFooter } from "../_components/app-footer";
 import { AppHeader } from "../_components/app-header";
 import { ImageInsertModal } from "../_components/image-insert-modal";
-import { LicenseModal } from "../_components/license-modal";
 import { MarkdownEditorPane } from "../_components/markdown-editor-pane";
 import { PreviewPane } from "../_components/preview-pane";
 import { RewardModal } from "../_components/reward-modal";
@@ -16,7 +15,6 @@ import { WeChatSyncModal } from "../_components/wechat-sync-modal";
 import { useAiFormat } from "../_hooks/use-ai-format";
 import { useAiSettings } from "../_hooks/use-ai-settings";
 import { useClipboardCopy } from "../_hooks/use-clipboard-copy";
-import { useLicense } from "../_hooks/use-license";
 import { useMarkdownTools } from "../_hooks/use-markdown-tools";
 import { useScrollSync } from "../_hooks/use-scroll-sync";
 import { useTheme } from "../_hooks/use-theme";
@@ -52,7 +50,6 @@ export default function Home() {
   const [showReward, setShowReward] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showWeChatModal, setShowWeChatModal] = useState(false);
-  const [showLicenseModal, setShowLicenseModal] = useState(false);
   const [imageMap, setImageMap] = useState<Map<string, string>>(new Map());
   const [imageUrl, setImageUrl] = useState("");
   const [imageDesc, setImageDesc] = useState("");
@@ -65,7 +62,6 @@ export default function Home() {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const aiSettings = useAiSettings(showToast);
   const wechatSettings = useWeChatSettings();
-  const license = useLicense();
   const wordCount = useWordCount(inputText);
   const copyToClipboard = useClipboardCopy(showToast);
   const { syncScroll, setSyncScroll, previewRef, handleInputScroll, handlePreviewScroll } =
@@ -160,19 +156,6 @@ export default function Home() {
 
       <RewardModal open={showReward} onClose={() => setShowReward(false)} />
 
-      <LicenseModal
-        open={showLicenseModal}
-        onClose={() => setShowLicenseModal(false)}
-        licenseKey={license.licenseKey}
-        setLicenseKey={license.setLicenseKey}
-        licenseStatus={license.licenseStatus}
-        licensePlan={license.licensePlan}
-        licenseError={license.licenseError}
-        onVerify={license.verifyLicenseKey}
-        onClear={license.clearLicense}
-        showToast={showToast}
-      />
-
       <WeChatSyncModal
         open={showWeChatModal}
         onClose={() => setShowWeChatModal(false)}
@@ -182,9 +165,6 @@ export default function Home() {
         config={wechatSettings.wechatConfig}
         onSaveConfig={wechatSettings.updateConfig}
         showToast={showToast}
-        isLicenseActive={license.isLicenseActive}
-        licenseKey={license.licenseKey}
-        onShowLicense={() => setShowLicenseModal(true)}
       />
 
       <div className="h-screen flex flex-col overflow-hidden shrink-0">

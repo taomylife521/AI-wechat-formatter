@@ -3,7 +3,6 @@ import {
   ExternalLink,
   HelpCircle,
   ImageIcon,
-  Key,
   Loader2,
   Send,
   ShieldCheck,
@@ -29,9 +28,6 @@ type WeChatSyncModalProps = {
   config: WeChatAccountConfig;
   onSaveConfig: (config: WeChatAccountConfig) => void;
   showToast: (message: string, type: "success" | "error") => void;
-  isLicenseActive: boolean;
-  licenseKey: string;
-  onShowLicense: () => void;
 };
 
 export function WeChatSyncModal({
@@ -43,9 +39,6 @@ export function WeChatSyncModal({
   config,
   onSaveConfig,
   showToast,
-  isLicenseActive,
-  licenseKey,
-  onShowLicense,
 }: WeChatSyncModalProps) {
   const [activeTab, setActiveTab] = useState<"sync" | "config">("sync");
   const [draftConfig, setDraftConfig] = useState<WeChatAccountConfig>(config);
@@ -91,11 +84,6 @@ export function WeChatSyncModal({
   };
 
   const handleSync = async () => {
-    if (!isLicenseActive) {
-      onShowLicense();
-      return;
-    }
-
     if (!draftConfig.appId || !draftConfig.appSecret) {
       setActiveTab("config");
       showToast("请先完成公众号配置", "error");
@@ -123,7 +111,6 @@ export function WeChatSyncModal({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-TypeZen-License": licenseKey,
         },
         body: JSON.stringify(requestData),
       });
@@ -169,11 +156,6 @@ export function WeChatSyncModal({
     status === "authorizing" || status === "uploading_images" || status === "creating_draft";
 
   const handleDetectIp = async () => {
-    if (!isLicenseActive) {
-      onShowLicense();
-      return;
-    }
-
     if (!draftConfig.appId || !draftConfig.appSecret) {
       setActiveTab("config");
       showToast("请先完成公众号配置", "error");
@@ -189,7 +171,6 @@ export function WeChatSyncModal({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-TypeZen-License": licenseKey,
         },
         body: JSON.stringify({ config: { appId: draftConfig.appId, appSecret: draftConfig.appSecret } }),
       });
@@ -295,17 +276,6 @@ export function WeChatSyncModal({
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             账号配置
-          </button>
-          <button
-            onClick={onShowLicense}
-            className={`px-4 py-3 font-black text-xs uppercase transition-all flex items-center justify-center gap-1.5 border-l-[3px] border-(--neo-ink) ${
-              isLicenseActive
-                ? "bg-(--neo-green)/10 text-(--neo-green)"
-                : "bg-(--neo-pink)/10 text-(--neo-pink)"
-            }`}
-          >
-            <Key className="w-3 h-3" />
-            {isLicenseActive ? "Pro" : "激活"}
           </button>
         </div>
 
@@ -428,40 +398,13 @@ export function WeChatSyncModal({
                     </div>
                   </div>
 
-                  {!isLicenseActive && (
-                    <div className="bg-(--neo-yellow) border-[3px] border-(--neo-ink) p-4 shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
-                      <div className="flex items-start gap-3">
-                        <Key className="w-5 h-5 shrink-0 text-(--neo-ink)" />
-                        <div className="space-y-1">
-                          <p className="text-xs font-black">需要 Pro License</p>
-                          <p className="text-[10px] font-bold leading-relaxed text-(--neo-ink)/80">
-                            微信自动同步是专业版功能。点击下方按钮输入 License Key 激活。
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   <button
                     onClick={handleSync}
                     disabled={ipDiagnosticStatus === "checking"}
-                    className={`neo-button w-full py-5 text-xl font-black flex items-center justify-center gap-3 transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_0_rgba(0,0,0,1)] disabled:opacity-50 ${
-                      isLicenseActive
-                        ? "bg-(--neo-green) text-white"
-                        : "bg-(--neo-yellow) text-(--neo-ink)"
-                    }`}
+                    className="neo-button bg-(--neo-green) text-white w-full py-5 text-xl font-black flex items-center justify-center gap-3 transition-all shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_0_rgba(0,0,0,1)] disabled:opacity-50"
                   >
-                    {isLicenseActive ? (
-                      <>
-                        <Send className="w-6 h-6" />
-                        开始同步至草稿箱
-                      </>
-                    ) : (
-                      <>
-                        <Key className="w-6 h-6" />
-                        激活 License 后同步
-                      </>
-                    )}
+                    <Send className="w-6 h-6" />
+                    开始同步至草稿箱
                   </button>
                 </div>
               ) : status === "error" ? (
