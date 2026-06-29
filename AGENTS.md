@@ -1,4 +1,4 @@
-# 项目指南：公众号一键排版助手 Pro (WeChat Formatter Pro)
+# 项目指南：公众号一键排版助手 (WeChat Formatter)
 
 ## 项目概述
 
