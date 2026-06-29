@@ -115,6 +115,12 @@ export default function RootLayout({
                 gtag('config', 'G-E96JLD0RWJ');
               `}
             </Script>
+            <Script
+              async
+              src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6369413916692417"
+              crossOrigin="anonymous"
+              strategy="afterInteractive"
+            />
           </>
         )}
         <Script id="theme-init" strategy="beforeInteractive">
