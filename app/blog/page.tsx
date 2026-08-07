@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE_URL } from "@/lib/site-config";
 import { LandingHeader } from "../_components/landing/header";
 import { LandingFooter } from "../_components/landing/footer";
 import { blogPosts } from "./_data/posts";
@@ -8,6 +9,9 @@ import { BookOpen, Calendar, Clock } from "lucide-react";
 export const metadata: Metadata = {
   title: "Blog | TypeZen 公众号 Markdown 排版指南与自媒体运营博客",
   description: "探索微信公众号排版美学、Markdown 写作技巧、AI 辅助编辑以及自媒体运营技巧。使用 TypeZen 智能优化排版，让内容传达更完美。",
+  alternates: {
+    canonical: `${SITE_URL}/blog`,
+  },
 };
 
 // 分类对应不同的高饱和背景色，增强新粗野风感觉

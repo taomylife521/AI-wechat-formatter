@@ -7,7 +7,10 @@ import {
 } from "@/lib/site-config";
 import { LegalLayout } from "../_components/landing/legal-layout";
 
-export const metadata = { title: "隐私政策" };
+export const metadata = {
+  title: "隐私政策",
+  alternates: { canonical: `${SITE_URL}/privacy` },
+};
 
 export default function PrivacyPage() {
   return (

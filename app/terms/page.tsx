@@ -7,7 +7,10 @@ import {
 } from "@/lib/site-config";
 import { LegalLayout } from "../_components/landing/legal-layout";
 
-export const metadata = { title: "服务条款" };
+export const metadata = {
+  title: "服务条款",
+  alternates: { canonical: `${SITE_URL}/terms` },
+};
 
 export default function TermsPage() {
   return (

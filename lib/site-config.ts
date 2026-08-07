@@ -29,7 +29,7 @@ export const SITE_KEYWORDS =
   "TypeZen, typezen, typezen.online, 公众号排版, 微信公众号排版, Markdown 排版, 微信编辑器, 公众号编辑器, Markdown 转微信, 智能一键排版, AI 排版";
 
 /** 联系邮箱（用于隐私政策、服务条款、关于页面； */
-export const SITE_CONTACT_EMAIL = "support@typezen.com";
+export const SITE_CONTACT_EMAIL = "mspringjade@gmail.com";
 
 /** 运营主体（用于服务条款；个人项目可保留为品牌名，上线前请按实际情况替换） */
 export const SITE_OPERATOR = "TypeZen Team";

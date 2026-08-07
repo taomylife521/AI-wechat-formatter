@@ -6,10 +6,14 @@ import {
   SITE_ICP,
   SITE_PRODUCT_NAME,
   SITE_SINCE_YEAR,
+  SITE_URL,
 } from "@/lib/site-config";
 import { LegalLayout } from "../_components/landing/legal-layout";
 
-export const metadata = { title: "关于我们" };
+export const metadata = {
+  title: "关于我们",
+  alternates: { canonical: `${SITE_URL}/about` },
+};
 
 export default function AboutPage() {
   const currentYear = new Date().getFullYear();
