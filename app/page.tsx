@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site-config";
+import { AdsterraNativeBanner } from "./_components/ads/adsterra-native-banner";
 import { LandingHeader } from "./_components/landing/header";
 import { LandingHero } from "./_components/landing/hero";
 import { LandingFeatures } from "./_components/landing/features";
@@ -25,6 +26,11 @@ export default function LandingPage() {
         <LandingFeatures />
         <LandingHowItWorks />
         <LandingTestimonials />
+        <section className="py-12 bg-(--neo-bg) border-t-[3px] border-(--neo-ink)">
+          <div className="max-w-7xl mx-auto px-6">
+            <AdsterraNativeBanner />
+          </div>
+        </section>
         <LandingBlogSection />
         <LandingFAQ />
       </div>

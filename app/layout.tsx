@@ -123,6 +123,11 @@ export default function RootLayout({
               src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6369413916692417"
               crossOrigin="anonymous"
             />
+            {/* Adsterra Social Bar：全站悬浮广告条 */}
+            <Script
+              src="https://pl30840692.effectivecpmnetwork.com/1f/a1/c7/1fa1c7d7c8bf58baee342583fcb44933.js"
+              strategy="afterInteractive"
+            />
           </>
         )}
         <Script id="theme-init" strategy="beforeInteractive">
