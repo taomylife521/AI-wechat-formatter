@@ -1,16 +1,35 @@
+import { ArrowLeft, BookOpen, Calendar, Clock } from "lucide-react";
+import { Marked } from "marked";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LandingHeader } from "../../_components/landing/header";
-import { LandingFooter } from "../../_components/landing/footer";
-import { blogPosts } from "../_data/posts";
-import { Marked } from "marked";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { SITE_BRAND, SITE_URL } from "@/lib/site-config";
+import { LandingFooter } from "../../_components/landing/footer";
+import { LandingHeader } from "../../_components/landing/header";
+import type { BlogPost } from "../_data/posts";
+import { blogPosts } from "../_data/posts";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
+
+// 计算相关阅读：同分类优先（按日期倒序），不足再用最新其他文章补齐，始终排除当前篇
+function getRelatedPosts(current: BlogPost, count: number): BlogPost[] {
+  const others = blogPosts.filter((p) => p.slug !== current.slug);
+  const sameCategory = others
+    .filter((p) => p.category === current.category)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  if (sameCategory.length >= count) {
+    return sameCategory.slice(0, count);
+  }
+
+  const fill = others
+    .filter((p) => p.category !== current.category)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return [...sameCategory, ...fill].filter(Boolean).slice(0, count);
+}
 
 // 预渲染静态参数
 export async function generateStaticParams() {
@@ -60,6 +79,9 @@ export default async function BlogPostDetailPage({ params }: Props) {
   const markedInstance = new Marked();
   const rawHtml = await markedInstance.parse(post.content);
 
+  // 相关阅读：优先同分类，不足则用最新其他文章补齐，均排除当前篇
+  const related = getRelatedPosts(post, 3);
+
   return (
     <main className="min-h-screen flex flex-col neo-app-bg font-sans">
       <LandingHeader />
@@ -104,6 +126,50 @@ export default async function BlogPostDetailPage({ params }: Props) {
             dangerouslySetInnerHTML={{ __html: rawHtml }}
           />
         </article>
+
+        {/* 相关阅读：加强文章内链，利于 SEO 爬深与权重传递 */}
+        {related.length > 0 && (
+          <section className="mt-12" aria-labelledby="related-posts">
+            <div className="flex items-center gap-3 mb-6">
+              <h2
+                id="related-posts"
+                className="text-xl sm:text-2xl font-black tracking-tight text-(--neo-ink)"
+              >
+                相关阅读
+              </h2>
+              <span className="text-xs font-black uppercase text-black bg-(--neo-cyan) px-2 py-1 border-2 border-(--neo-ink)">
+                Keep Reading
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {related.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={`/blog/${item.slug}`}
+                  className="neo-panel bg-(--neo-surface) flex flex-col justify-between p-5 hover:translate-y-[-4px] hover:shadow-[8px_8px_0px_var(--neo-shadow-core)] transition-all duration-150"
+                >
+                  <div>
+                    <span className="inline-block text-[11px] font-black uppercase text-(--neo-muted) px-2 py-0.5 mb-3 border-2 border-(--neo-ink)">
+                      {item.category}
+                    </span>
+                    <h3 className="text-base font-black text-(--neo-ink) leading-snug mb-3 hover:text-(--neo-pink) transition-colors line-clamp-3">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <div className="pt-3 border-t-2 border-dashed border-(--neo-ink) flex items-center justify-between text-xs font-bold text-(--neo-muted)">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {item.date}
+                    </span>
+                    <span className="flex items-center gap-1 hover:text-(--neo-pink) transition-colors">
+                      阅读 <BookOpen className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <LandingFooter />
